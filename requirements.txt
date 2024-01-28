@@ -1,5 +1,5 @@
 streamlit
 summarizer
-newspaper
+newspaper3k
 spacy
 requests
