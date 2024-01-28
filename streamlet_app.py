@@ -34,11 +34,10 @@ class email():
         s.sendmail(me, you, msg.as_string())
         s.quit()
 
+email_from = st.secrets["email_from"]
+email_to = st.secrets["email_to"]
+passwd = st.secrets["passwd"]
 
-
-email_from = 'loominateai@gmail.com'
-email_to = 'ethansuperrockstar@gmail.com'
-passwd = 'rtns pace vuwp hehl'
 
 def load_model():
     return spacy.load("en_core_web_sm")
@@ -104,7 +103,7 @@ if st.button("Submit"):
 selected_categories = st.multiselect("Select your categories:", ["business", "entertainment", "health", "science", "sports", "technology"])
 
 if st.button("Summarize News Headlines"):
-    api_key = "59b475ddc6444615b3035c01a398b0a9"  # Replace with your actual News API key
+    api_key = st.secrets["api_key"]
     if api_key and selected_categories and emailto:
         for category in selected_categories:
             summarize_articles(api_key, category, emailto)
