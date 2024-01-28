@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import Summarizer
+from summarizer import Summarizer
 import newspaper
 import spacy
 #!/usr/bin/env python3
