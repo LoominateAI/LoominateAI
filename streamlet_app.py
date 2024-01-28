@@ -40,7 +40,6 @@ email_from = 'loominateai@gmail.com'
 email_to = 'ethansuperrockstar@gmail.com'
 passwd = 'rtns pace vuwp hehl'
 
-@st.cache
 def load_model():
     return spacy.load("en_core_web_sm")
 
