@@ -39,7 +39,12 @@ class email():
 email_from = 'loominateai@gmail.com'
 email_to = 'ethansuperrockstar@gmail.com'
 passwd = 'rtns pace vuwp hehl'
-nlp = spacy.load("en_core_web_sm")
+
+@st.cache
+def load_model():
+    return spacy.load("en_core_web_sm")
+
+nlp = load_model()
 
 def clean_and_extract_informative(text):
     doc = nlp(text)
