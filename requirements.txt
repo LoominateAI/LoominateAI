@@ -1,4 +1,5 @@
 streamlit
+torch
 bert-extractive-summarizer
 newspaper3k
 requests
