@@ -1,5 +1,5 @@
 streamlit
-summarizer
+bert-extractive-summarizer
 newspaper3k
 requests
 spacy==3.5.0
