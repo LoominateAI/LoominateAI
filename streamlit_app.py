@@ -33,11 +33,6 @@ def load_spacy_model():
 def load_bert_summarizer():
     return Summarizer('bert-large-uncased')
 
-def clean_and_extract_informative(text, nlp):
-    doc = nlp(text)
-    informative_paragraphs = [p.text.strip() for p in doc.sents if p and not p.text.startswith(("By", "Sign up", "Subscribe", "Download the app"))]
-    return ' '.join(informative_paragraphs)
-
 def bert_extractive_summarize(text, summarizer):
     summary = summarizer(text)
     return summary
@@ -47,6 +42,12 @@ def get_news(api_key, category):
     params = {"apiKey": api_key, "country": "us", "category": category}
     response = requests.get(base_url, params=params).json()
     return [{"title": a['title'], "url": a['url']} for a in response.get("articles", []) if a['title'] != "[Removed]"]
+
+@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
+def clean_and_extract_informative(text, nlp):
+    doc = nlp(text)
+    informative_paragraphs = [p.text.strip() for p in doc.sents if p and not p.text.startswith(("By", "Sign up", "Subscribe", "Download the app"))]
+    return ' '.join(informative_paragraphs)
 
 def summarize_articles(api_key, category, email_to, email_sender, nlp, summarizer):
     headlines = get_news(api_key, category)
