@@ -71,12 +71,13 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
 
         html_content = f"""
         <html>
-          <body>
-            <h1>Daily News Summary</h1>     
-            <p>{combined_summary}</p>   
-          </body>
+          <body>
+            <h1>Daily News Summary</h1>
+            <p>{combined_summary}</p>
+          </body>
         </html>
         """
+
         email_sender.send_email('Daily News', html_content)
 
     else:
