@@ -38,7 +38,7 @@ email_from = st.secrets["email_from"]
 email_to = st.secrets["email_to"]
 passwd = st.secrets["passwd"]
 
-
+@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None}
 def load_model():
     return spacy.load("en_core_web_sm")
 
