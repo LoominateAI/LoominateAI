@@ -3,46 +3,34 @@ import requests
 from summarizer import Summarizer
 import newspaper
 import spacy
-#!/usr/bin/env python3
-
-import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import getpass
-class email():
-    """
-    create and sends an email
-    """
-    def __init__(self,emailfrom=None,emailto=None):
-        self.emailfrom = emailfrom
-        self.emailto = emailto
+import smtplib
 
-    def send(self,title,contents,passwd):
-        me = self.emailfrom
-        you = self.emailto
+class EmailSender:
+    def __init__(self, email_from, email_to, passwd):
+        self.email_from = email_from
+        self.email_to = email_to
+        self.passwd = passwd
 
+    def send_email(self, title, contents):
         msg = MIMEMultipart('alternative')
         msg['Subject'] = title
-        msg['From'] = me
-        msg['To'] = you
-
+        msg['From'] = self.email_from
+        msg['To'] = self.email_to
         part = MIMEText(contents, 'html')
         msg.attach(part)
-
-        s = smtplib.SMTP_SSL('smtp.gmail.com',port=465)
-        s.login(self.emailfrom ,passwd)
-        s.sendmail(me, you, msg.as_string())
+        s = smtplib.SMTP_SSL('smtp.gmail.com', port=465)
+        s.login(self.email_from, self.passwd)
+        s.sendmail(self.email_from, self.email_to, msg.as_string())
         s.quit()
 
-email_from = st.secrets["email_from"]
-email_to = st.secrets["email_to"]
-passwd = st.secrets["passwd"]
-
-@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None}
 def load_model():
     return spacy.load("en_core_web_sm")
 
-nlp = load_model()
+@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
+def load_spacy_model():
+    return load_model()
 
 def clean_and_extract_informative(text):
     doc = nlp(text)
@@ -50,7 +38,9 @@ def clean_and_extract_informative(text):
     return ' '.join(informative_paragraphs)
 
 def bert_extractive_summarize(text):
-    return Summarizer()(text)
+    summarizer = Summarizer('bert-large-uncased')
+    summary = summarizer(text)
+    return summary
 
 def get_news(api_key, category):
     base_url = "https://newsapi.org/v2/top-headlines"
@@ -58,7 +48,7 @@ def get_news(api_key, category):
     response = requests.get(base_url, params=params).json()
     return [{"title": a['title'], "url": a['url']} for a in response.get("articles", []) if a['title'] != "[Removed]"]
 
-def summarize_articles(api_key, category, emailto):
+def summarize_articles(api_key, category, emailto, email_sender):
     headlines = get_news(api_key, category)
     if headlines:
         summaries = []
@@ -77,7 +67,7 @@ def summarize_articles(api_key, category, emailto):
         combined_summary = "\n\n".join(summaries)
         st.write("Combined Summary:")
         st.write(combined_summary)
-        em = email(email_from,emailto)
+        
         html_content = f"""
         <html>
           <body>
@@ -86,17 +76,16 @@ def summarize_articles(api_key, category, emailto):
           </body>
         </html>
         """
-        
-        em.send(f'Daily News', html_content,passwd)
+        email_sender.send_email('Daily News', html_content)
+
     else:
         st.warning(f"No valid headlines found for category {category}.")
 
 st.title("News Headlines App")
-emailto = st.text_input("Enter your email:")
+email_to = st.text_input("Enter your email:")
 if st.button("Submit"):
-    if emailto:
-        # Process the email (you can add your logic here)
-        st.success(f"Email submitted: {emailto}")
+    if email_to:
+        st.success(f"Email submitted: {email_to}")
     else:
         st.warning("Please enter a valid email.")
 
@@ -104,9 +93,13 @@ selected_categories = st.multiselect("Select your categories:", ["business", "en
 
 if st.button("Summarize News Headlines"):
     api_key = st.secrets["api_key"]
-    if api_key and selected_categories and emailto:
+    email_from = st.secrets["email_from"]
+    passwd = st.secrets["passwd"]
+
+    if api_key and selected_categories and email_to:
+        email_sender = EmailSender(email_from, email_to, passwd)
         for category in selected_categories:
-            summarize_articles(api_key, category, emailto)
+            summarize_articles(api_key, category, email_to, email_sender)
             st.write("---")
     else:
         st.warning("Please provide a valid email and select at least one category.")
