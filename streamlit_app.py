@@ -77,7 +77,6 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
           </body>
         </html>
         """
-
         email_sender.send_email('Daily News', html_content)
 
     else:
