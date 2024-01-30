@@ -33,11 +33,11 @@ def load_models():
 
 def clean_and_extract_informative(text, nlp):
     doc = nlp(text)
-    informative_paragraphs = [p.text.strip() for p in doc.sents if p and not p.text.startswith(("By", "Sign up", "Subscribe", "Download the app"))]
+    informative_paragraphs = [p.text.strip() for p in doc.sents if p and not p.text.startswith(("Sign up", "Subscribe", "Download the app"))]
     return ' '.join(informative_paragraphs)
 
 def summarize_with_bart(text, summarizer):
-    summary = summarizer(text, max_length=150, min_length=30, do_sample=False)[0]['summary_text']  # Adjust parameters as needed
+    summary = summarizer(text, max_length=2000, min_length=50, do_sample=False)[0]['summary_text']  # Adjust parameters as needed
     return summary
 
 def get_news(api_key, category):
