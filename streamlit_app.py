@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from summarizer import Summarizer
+from transformers import pipeline
 import newspaper
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -25,21 +25,19 @@ class EmailSender:
         s.sendmail(self.email_from, self.email_to, msg.as_string())
         s.quit()
 
-@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
-def load_spacy_model():
-    return spacy.load("en_core_web_sm")
-
-@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
-def load_bert_summarizer():
-    return Summarizer('bert-large-uncased')
+@st.cache(allow_output_mutation=True)  # Allow mutation for model loading
+def load_models():
+    nlp_model = spacy.load("en_core_web_sm")
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn", tokenizer="facebook/bart-large-cnn")  # Load BART model
+    return nlp_model, summarizer
 
 def clean_and_extract_informative(text, nlp):
     doc = nlp(text)
     informative_paragraphs = [p.text.strip() for p in doc.sents if p and not p.text.startswith(("By", "Sign up", "Subscribe", "Download the app"))]
     return ' '.join(informative_paragraphs)
 
-def bert_extractive_summarize(text, summarizer):
-    summary = summarizer(text)
+def summarize_with_bart(text, summarizer):
+    summary = summarizer(text, max_length=150, min_length=30, do_sample=False)[0]['summary_text']  # Adjust parameters as needed
     return summary
 
 def get_news(api_key, category):
@@ -59,7 +57,7 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
                 article.download()
                 article.parse()
                 cleaned_text = clean_and_extract_informative(article.text, nlp)
-                summary = bert_extractive_summarize(cleaned_text, summarizer)
+                summary = summarize_with_bart(cleaned_text, summarizer)
                 summaries.append(summary)
             except Exception as e:
                 st.warning(f"Unable to read article. Error: {str(e)}")
@@ -70,10 +68,10 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
 
         html_content = f"""
         <html>
-          <body>
-            <h1>Daily News Summary</h1>     
-            <p>{combined_summary}</p>   
-          </body>
+         <body>
+          <h1>Daily News Summary</h1>   
+          <p>{combined_summary}</p>  
+         </body>
         </html>
         """
         email_sender.send_email('Daily News', html_content)
@@ -91,18 +89,3 @@ if st.button("Submit"):
 
 selected_categories = st.multiselect("Select your categories:", ["business", "entertainment", "health", "science", "sports", "technology"])
 
-if st.button("Summarize News Headlines"):
-    api_key = st.secrets["api_key"]
-    email_from = st.secrets["email_from"]
-    passwd = st.secrets["passwd"]
-
-    if api_key and selected_categories and email_to:
-        nlp_model = load_spacy_model()
-        summarizer_model = load_bert_summarizer()
-
-        email_sender = EmailSender(email_from, email_to, passwd)
-        for category in selected_categories:
-            summarize_articles(api_key, category, email_to, email_sender, nlp_model, summarizer_model)
-            st.write("---")
-    else:
-        st.warning("Please provide a valid email and select at least one category.")
