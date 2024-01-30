@@ -51,16 +51,33 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
     if headlines:
         summaries = []
         for idx, article_data in enumerate(headlines[:5], start=1):
-            st.write(f"{idx}. {article_data['title']}")
+            # Option 1: Skipping problematic articles
             try:
                 article = newspaper.Article(article_data['url'])
                 article.download()
                 article.parse()
+
+                if not article.text:
+                    st.warning(f"Article {idx} is empty. Skipping...")
+                    continue
+
                 cleaned_text = clean_and_extract_informative(article.text, nlp)
                 summary = summarize_with_bart(cleaned_text, summarizer)
                 summaries.append(summary)
+
             except Exception as e:
-                st.warning(f"Unable to read article. Error: {str(e)}")
+                st.warning(f"Unable to read article {idx}. Error: {str(e)}")
+
+            # Option 2: Alternative summarization method
+            # Uncomment this block and comment out the above try-except block if using this option
+            # try:
+            #     article = newspaper.Article(article_data['url'])
+            #     article.download()
+            #     article.parse()
+            #     summary = summarize_with_bart(article.text, summarizer)
+            #     summaries.append(summary)
+            # except Exception as e:
+            #     st.warning(f"Unable to read article {idx}. Error: {str(e)}")
 
         combined_summary = "\n\n".join(summaries)
         st.write("Combined Summary:")
@@ -78,6 +95,8 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
 
     else:
         st.warning(f"No valid headlines found for category {category}.")
+
+
 
 st.title("News Headlines App")
 email_to = st.text_input("Enter your email:")
