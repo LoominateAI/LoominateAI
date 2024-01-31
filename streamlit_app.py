@@ -26,11 +26,10 @@ class EmailSender:
         s.sendmail(self.email_from, self.email_to, msg.as_string())
         s.quit()
 
-def load_spacy_model():
-    return spacy.load("en_core_web_sm", disable=["ner", "parser", "textcat"])
-
-def load_bert_summarizer():
-    return Summarizer('bert-large-uncased')
+def load_models():
+    nlp_model = spacy.load("en_core_web_sm", disable=["ner", "parser", "textcat"])
+    summarizer_model = Summarizer('bert-large-uncased')
+    return nlp_model, summarizer_model
 
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -86,13 +85,10 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
 
 st.title("News Headlines App")
 email_to = st.text_input("Enter your email:")
+
 if st.button("Submit"):
     if is_valid_email(email_to):
         st.success(f"Email submitted: {email_to}")
-        nlp_model = load_spacy_model()
-        summarizer_model = load_bert_summarizer()
-        st.session_state.nlp_model = nlp_model
-        st.session_state.summarizer_model = summarizer_model
     else:
         st.warning("Please enter a valid email.")
 
@@ -104,8 +100,7 @@ if st.button("Summarize News Headlines"):
     passwd = st.secrets["passwd"]
 
     if api_key and selected_categories and is_valid_email(email_to):
-        nlp_model = st.session_state.nlp_model
-        summarizer_model = st.session_state.summarizer_model
+        nlp_model, summarizer_model = load_models()
 
         email_sender = EmailSender(email_from, email_to, passwd)
         for category in selected_categories:
