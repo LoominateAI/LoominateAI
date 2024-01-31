@@ -26,10 +26,15 @@ class EmailSender:
         s.sendmail(self.email_from, self.email_to, msg.as_string())
         s.quit()
 
-def load_models():
-    nlp_model = spacy.load("en_core_web_sm", disable=["ner", "parser", "textcat"])
-    summarizer_model = Summarizer('bert-large-uncased')
-    return nlp_model, summarizer_model
+@st.cache(hash_funcs={spacy.tokens.doc.Doc: lambda _: None})
+def load_spacy_model():
+    return spacy.load("en_core_web_sm")
+
+@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
+def load_bert_summarizer():
+    return Summarizer('bert-large-uncased')
+
+# rest of the code remains unchanged
 
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
