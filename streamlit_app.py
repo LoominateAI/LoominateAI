@@ -26,10 +26,11 @@ class EmailSender:
         s.sendmail(self.email_from, self.email_to, msg.as_string())
         s.quit()
 
+@st.cache(allow_output_mutation=True)
 def load_spacy_model():
     return spacy.load("en_core_web_sm", disable=["ner", "parser", "textcat"])
 
-@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
+@st.cache(allow_output_mutation=True)
 def load_bert_summarizer():
     return Summarizer('bert-large-uncased')
 
@@ -90,8 +91,6 @@ email_to = st.text_input("Enter your email:")
 if st.button("Submit"):
     if is_valid_email(email_to):
         st.success(f"Email submitted: {email_to}")
-        st.session_state.nlp_model = load_spacy_model()  # Store in session state
-        st.session_state.summarizer_model = load_bert_summarizer()  # Store in session state
     else:
         st.warning("Please enter a valid email.")
 
@@ -103,8 +102,8 @@ if st.button("Summarize News Headlines"):
     passwd = st.secrets["passwd"]
 
     if api_key and selected_categories and is_valid_email(email_to):
-        nlp_model = st.session_state.nlp_model  # Retrieve from session state
-        summarizer_model = st.session_state.summarizer_model  # Retrieve from session state
+        nlp_model = load_spacy_model()
+        summarizer_model = load_bert_summarizer()
 
         email_sender = EmailSender(email_from, email_to, passwd)
         for category in selected_categories:
