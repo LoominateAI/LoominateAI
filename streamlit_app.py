@@ -6,7 +6,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import spacy
-import re
 
 class EmailSender:
     def __init__(self, email_from, email_to, passwd):
@@ -26,19 +25,13 @@ class EmailSender:
         s.sendmail(self.email_from, self.email_to, msg.as_string())
         s.quit()
 
-@st.cache(hash_funcs={spacy.tokens.doc.Doc: lambda _: None})
+@st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
 def load_spacy_model():
     return spacy.load("en_core_web_sm")
 
 @st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
 def load_bert_summarizer():
     return Summarizer('bert-large-uncased')
-
-# rest of the code remains unchanged
-
-def is_valid_email(email):
-    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    return re.match(pattern, email)
 
 def clean_and_extract_informative(text, nlp):
     doc = nlp(text)
@@ -77,10 +70,10 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
 
         html_content = f"""
         <html>
-          <body>
+          <body>
             <h1>Daily News Summary</h1>     
             <p>{combined_summary}</p>   
-          </body>
+          </body>
         </html>
         """
         email_sender.send_email('Daily News', html_content)
@@ -90,9 +83,8 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
 
 st.title("News Headlines App")
 email_to = st.text_input("Enter your email:")
-
 if st.button("Submit"):
-    if is_valid_email(email_to):
+    if email_to:
         st.success(f"Email submitted: {email_to}")
     else:
         st.warning("Please enter a valid email.")
@@ -104,8 +96,9 @@ if st.button("Summarize News Headlines"):
     email_from = st.secrets["email_from"]
     passwd = st.secrets["passwd"]
 
-    if api_key and selected_categories and is_valid_email(email_to):
-        nlp_model, summarizer_model = load_models()
+    if api_key and selected_categories and email_to:
+        nlp_model = load_spacy_model()
+        summarizer_model = load_bert_summarizer()
 
         email_sender = EmailSender(email_from, email_to, passwd)
         for category in selected_categories:
