@@ -9,22 +9,22 @@ import spacy
 import re
 
 class EmailSender:
-    def __init__(self, email_from, passwd):
+    def __init__(self, email_from, email_to, passwd):
         self.email_from = email_from
+        self.email_to = email_to
         self.passwd = passwd
 
-    def send_verification_email(self, email_to):
-        subject = "Email Verification"
-        body = "This is a test email to verify your email address."
-        msg = MIMEMultipart()
-        msg['Subject'] = subject
+    def send_email(self, title, contents):
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = title
         msg['From'] = self.email_from
-        msg['To'] = email_to
-        msg.attach(MIMEText(body, 'plain'))
-
-        with smtplib.SMTP_SSL('smtp.gmail.com', port=465) as server:
-            server.login(self.email_from, self.passwd)
-            server.sendmail(self.email_from, email_to, msg.as_string())
+        msg['To'] = self.email_to
+        part = MIMEText(contents, 'html')
+        msg.attach(part)
+        s = smtplib.SMTP_SSL('smtp.gmail.com', port=465)
+        s.login(self.email_from, self.passwd)
+        s.sendmail(self.email_from, self.email_to, msg.as_string())
+        s.quit()
 
 @st.cache(hash_funcs={"MyUnhashableClass": lambda _: None})
 def load_spacy_model():
@@ -81,23 +81,33 @@ def summarize_articles(api_key, category, email_to, email_sender, nlp, summarize
           </body>
         </html>
         """
-        email_sender.send_verification_email(email_to)
-        st.success(f"Thank you for submitting your email: {email_to}")
+        email_sender.send_email('Daily News', html_content)
+
     else:
         st.warning(f"No valid headlines found for category {category}.")
 
 st.title("News Headlines App")
 email_to = st.text_input("Enter your email:")
 if st.button("Submit"):
-    if email_to and is_valid_email(email_to):
-        api_key = st.secrets["api_key"]
-        email_from = st.secrets["email_from"]
-        passwd = st.secrets["passwd"]
+    if is_valid_email(email_to):
+        st.success(f"Email submitted: {email_to}")
+    else:
+        st.warning("Please enter a valid email.")
 
+selected_categories = st.multiselect("Select your categories:", ["business", "entertainment", "health", "science", "sports", "technology"])
+
+if st.button("Summarize News Headlines"):
+    api_key = st.secrets["api_key"]
+    email_from = st.secrets["email_from"]
+    passwd = st.secrets["passwd"]
+
+    if api_key and selected_categories and is_valid_email(email_to):
         nlp_model = load_spacy_model()
         summarizer_model = load_bert_summarizer()
 
-        email_sender = EmailSender(email_from, passwd)
-        summarize_articles(api_key, "technology", email_to, email_sender, nlp_model, summarizer_model)
+        email_sender = EmailSender(email_from, email_to, passwd)
+        for category in selected_categories:
+            summarize_articles(api_key, category, email_to, email_sender, nlp_model, summarizer_model)
+            st.write("---")
     else:
-        st.warning("Please enter a valid email.")
+        st.warning("Please provide a valid email and select at least one category.")
